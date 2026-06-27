@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pizza Keyboard Chef</title>
+    <style>
+        body { margin: 0; background: #ffeb3b; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: manipulation; }
+        #game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        canvas { background: #fff; border: 10px solid #795548; border-radius: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        #keyboard { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; margin-top: 10px; width: 95vw; max-width: 600px; }
+        .key { background: #fff; border: 3px solid #ff9800; border-radius: 10px; padding: 10px; text-align: center; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
+        .key:active { transform: scale(0.9); }
+        #ui { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 10px; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="ui">Coins: <span id="coins">0</span> | XP: <span id="xp">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="keyboard"></div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const coinsEl = document.getElementById('coins');
+    const xpEl = document.getElementById('xp');
+    
+    let gameState = { coins: 0, xp: 0, toppings: {}, pizza: [] };
+    const toppings = {
+        'A': { name: 'Anchovies', color: '#8bc34a' }, 'P': { name: 'Pepperoni', color: '#f44336' },
+        'C': { name: 'Cheese', color: '#ffeb3b' }, 'M': { name: 'Mozzarella', color: '#ffffff' }
+    };
+
+    function resize() {
+        canvas.width = Math.min(window.innerWidth * 0.9, 600);
+        canvas.height = 400;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Draw Pizza Base
+        ctx.fillStyle = '#ffcc80';
+        ctx.beginPath();
+        ctx.arc(canvas.width/2, canvas.height/2, 120, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw Toppings
+        gameState.pizza.forEach((t, i) => {
+            ctx.fillStyle = t.color;
+            ctx.beginPath();
+            ctx.arc(canvas.width/2 + (Math.sin(i)*50), canvas.height/2 + (Math.cos(i)*50), 20, 0, Math.PI*2);
+            ctx.fill();
+        });
+        requestAnimationFrame(draw);
+    }
+
+    function addTopping(letter) {
+        if (!toppings[letter]) return;
+        
+        const count = gameState.toppings[letter] || 0;
+        if (count >= 4) {
+            alert("Too much " + toppings[letter].name + "!");
+            return;
+        }
+
+        gameState.toppings[letter] = count + 1;
+        gameState.pizza.push(toppings[letter]);
+        gameState.coins += 10;
+        gameState.xp += 5;
+        
+        coinsEl.innerText = gameState.coins;
+        xpEl.innerText = gameState.xp;
+
+        // Speak
+        const msg = new SpeechSynthesisUtterance(toppings[letter].name);
+        window.speechSynthesis.speak(msg);
+    }
+
+    // Generate Keyboard
+    const kb = document.getElementById('keyboard');
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ '.split('').forEach(char => {
+        const btn = document.createElement('div');
+        btn.className = 'key';
+        btn.innerText = char;
+        btn.onclick = () => addTopping(char);
+        kb.appendChild(btn);
+    });
+
+    window.addEventListener('keydown', (e) => {
+        const key = e.key.toUpperCase();
+        if (key === ' ') { /* Trigger Oven Logic */ }
+        else { addTopping(key); }
+    });
+
+    draw();
+</script>
+</body>
+</html>
